@@ -1,0 +1,206 @@
+"""
+Clone of 2048 game.
+"""
+
+#import poc_2048_gui
+import random
+
+# Directions, DO NOT MODIFY
+UP = 1
+DOWN = 2
+LEFT = 3
+RIGHT = 4
+
+# Offsets for computing tile indices in each direction.
+# DO NOT MODIFY this dictionary.
+OFFSETS = {UP: (1, 0),
+           DOWN: (-1, 0),
+           LEFT: (0, 1),
+           RIGHT: (0, -1)}
+
+def merge(line):
+    """
+    Helper function that merges a single row or column in 2048
+    """
+    length = len(line)
+    zero = 0
+    result_list = list(line)
+    
+    while zero in result_list:
+        #shifts all values to the left
+        result_list.remove(zero)
+        
+    while len(result_list) != length:
+              result_list.append(zero)
+        
+    for pos in range(length - 1):        
+        if pos + 1 == length:
+            break
+            
+        if result_list[pos] == result_list[pos + 1]:
+            #adds matching values
+            result_list[pos] *= 2
+            del result_list[pos + 1]
+            result_list.insert(pos + 1, zero)
+            
+    while zero in result_list:
+        result_list.remove(zero)
+        
+    while len(result_list) != length:
+        result_list.append(zero)
+        
+    return result_list
+
+def ini_tiles(height, width):
+    """
+    Set the dictionary of initial tiles for each direction.
+    """
+    
+    initial_tiles = {}
+    directions = [UP, DOWN, LEFT, RIGHT]
+    
+    for direction in directions:
+        tiles = []
+        if direction == UP:
+            for index in range(width):
+                tiles.append((0, index))
+        elif direction == DOWN:
+            for index in range(width):
+                tiles.append((height - 1, index))
+        elif direction == LEFT:
+            for index in range(height):
+                tiles.append((index, 0))
+        elif direction == RIGHT:
+            for index in range(height):
+                tiles.append((index, width - 1))
+                
+        
+        initial_tiles[direction] = tiles
+        
+    return initial_tiles
+
+class TwentyFortyEight:
+    """
+    Class to run the game logic.
+    """
+
+    def __init__(self, grid_height, grid_width):
+        self.row = grid_height
+        self.col = grid_width
+        self.grid = {}
+        self.avai_tiles = {}
+        self.ini_tiles = ini_tiles(grid_height, grid_width)
+        self.reset()
+
+    def reset(self):
+        """
+        Reset the game so the grid is empty except for two
+        initial tiles.
+        """
+        for row in range(self.row):
+            for col in range(self.col):
+                self.grid[row, col] = 0
+                self.avai_tiles[row, col] = 0
+        self.new_tile()
+        self.new_tile()
+
+    def __str__(self):
+        """
+        Return a string representation of the grid for debugging.
+        """
+        grid_string = ""
+        
+        for row in range(self.row):
+            for col in range(self.col):
+                if col == self.col - 1:
+                    grid_string += str(self.grid[(row, col)]) + "\n"
+                else:
+                    grid_string += str(self.grid[(row, col)]) + ", "
+                    
+        return grid_string
+
+    def get_grid_height(self):
+        """
+        Get the height of the board.
+        """
+        return self.row
+
+    def get_grid_width(self):
+        """
+        Get the width of the board.
+        """
+        return self.col
+
+    def move(self, direction):
+        """
+        Move all tiles in the given direction and add
+        a new tile if any tiles moved.
+        """
+        tile_changed = False
+        
+        for tile in self.ini_tiles[direction]:
+            temp_tile_list = []
+            row = tile[0]
+            col = tile[1]
+            
+            while (row, col) in self.grid:
+                temp_tile_list.append(self.grid[(row, col)])
+                row += OFFSETS[direction][0]
+                col += OFFSETS[direction][1]
+                
+            temp_tile_list = merge(temp_tile_list) 
+            
+            row = tile[0]
+            col = tile[1]
+            list_index = 0
+            
+            while (row, col) in self.grid:
+                if self.grid[(row, col)] != temp_tile_list[list_index]:
+                    tile_changed = True
+                    
+                if temp_tile_list[list_index] == 0:
+                    self.avai_tiles[(row, col)] = 0
+                else:
+                    if (row, col) in self.avai_tiles:
+                        self.avai_tiles.pop((row, col))
+                self.grid[(row, col)] = temp_tile_list[list_index]
+                row += OFFSETS[direction][0]
+                col += OFFSETS[direction][1]
+                list_index += 1
+                
+        if tile_changed:
+            self.new_tile()
+
+    def new_tile(self):
+        """
+        Create a new tile in a randomly selected empty
+        square.  The tile should be 2 90% of the time and
+        4 10% of the time.
+        """
+        tile_selection = random.choice(self.avai_tiles.keys())
+        num = random.choice([2, 2, 2, 2, 2, 2, 2, 2, 2, 4])
+        
+        self.set_tile(tile_selection[0], tile_selection[1], num)
+        self.avai_tiles.pop(tile_selection)
+        
+        return num
+
+    def set_tile(self, row, col, value):
+        """
+        Set the tile at position row, col to have the given value.
+        """
+        self.grid[row, col] = value
+
+    def get_tile(self, row, col):
+        """
+        Return the value of the tile at position row, col.
+        """
+        return self.grid[row, col]
+
+    def get_avai_tiles(self):
+        """
+        Return the available tiles for a new tile.
+        """
+        return self.avai_tiles
+
+#poc_2048_gui.run_gui(TwentyFortyEight(4, 4))
